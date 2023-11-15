@@ -21,8 +21,8 @@ int main() {
     char *token;
 
     while (1) {
-        int i;
-        display_prompt();
+	int i;
+	    display_prompt();
 
         if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
             printf("\n");
@@ -40,11 +40,6 @@ int main() {
         }
 
         args[i] = NULL;
-
-        if (args[0] != NULL && strcmp(args[0], "exit") == 0) {
-            printf("Exiting shell...\n");
-            break;
-        }
 
         pid = fork();
 
@@ -68,4 +63,3 @@ int main() {
 
     return 0;
 }
-
