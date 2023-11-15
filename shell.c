@@ -1,62 +1,48 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#define MAX_INPUT_SIZE 1024
 
 void display_prompt() {
     printf("#cisfun$ ");
     fflush(stdout);
 }
 
-void execute_command(char *command, char *args[]) {
-    pid_t pid = fork();
-
-    if (pid == -1) {
-        perror("fork");
-    } else if (pid == 0) {
-        /* Child process */
-        if (execvp(command, args) == -1) {
-            perror("execvp");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        /* Parent process */
-        waitpid(pid, NULL, 0);
-    }
-}
-
-int main(void) {
-    char input[1024];
+int main() {
+    char input[MAX_INPUT_SIZE];
+    pid_t pid;
 
     while (1) {
         display_prompt();
 
-        if (fgets(input, sizeof(input), stdin) == NULL) {
-            /* Handle end-of-file condition (Ctrl+D) */
+        if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
             printf("\n");
             break;
         }
 
-        /* Remove newline character from input */
         input[strcspn(input, "\n")] = '\0';
 
-        if (input[0] != '\0') {
-            /* Tokenize input into command and arguments */
-            char *token;
-            char *args[1024];
-            int arg_count = 0;
+        pid = fork();
 
-            token = strtok(input, " ");
-            while (token != NULL) {
-                args[arg_count++] = token;
-                token = strtok(NULL, " ");
+        if (pid == -1) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            if (execlp(input, input, (char *)NULL) == -1) {
+                perror("exec");
+                exit(EXIT_FAILURE);
             }
-            args[arg_count] = NULL;
+        } else {
+            int status;
+            waitpid(pid, &status, 0);
 
-            /* Execute command with arguments */
-            execute_command(args[0], args);
+            if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+                fprintf(stderr, "./shell: %s: command not found\n", input);
+            }
         }
     }
 
